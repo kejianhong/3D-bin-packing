@@ -27,3 +27,10 @@ check:
 .PHONY: print
 print:
 	@echo $(PYTHON_FILES)
+
+.PHONY: all-examples
+all-examples:
+	@for i in $$(seq 0 7); do \
+		echo $$i; \
+		python3 -m example.example$$i; \
+	done
