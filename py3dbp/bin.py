@@ -1,14 +1,12 @@
 import copy
 import dataclasses
 from dataclasses import dataclass
-from decimal import Decimal
 from typing import List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
 
-from .auxiliary_methods import set2Decimal
-from .constants import DEFAULT_NUMBER_OF_DECIMALS, DELTA, RT_ALL, Axis, BinType, RotationType, RT_NotUpdown
+from .constants import DELTA, RT_ALL, Axis, BinType, RotationType, RT_NotUpdown
 from .item import Item
 from .logger import log
 
@@ -44,8 +42,8 @@ def rectIntersect(item1: Item, item2: Item, axis1: Axis, axis2: Axis) -> bool:
     """
     Check whether the projection rectangle of the two items are intersected with each other or not.
     """
-    item1_dimension = [float(val) for val in item1.getDimension()]
-    item2_dimension = [float(val) for val in item2.getDimension()]
+    item1_dimension = item1.getDimension()
+    item2_dimension = item2.getDimension()
     item1_rect = Rectangle(
         left_back_x=item1.position[axis1.value],
         left_back_y=item1.position[axis2.value],
@@ -101,15 +99,14 @@ class Bin:
         corner: int = 0,
         bin_type: BinType = BinType.openTop,
     ):
-        self.number_of_decimals: int = DEFAULT_NUMBER_OF_DECIMALS
         self.partno: str = partno
-        self.width: Decimal = set2Decimal(WHD[0], self.number_of_decimals)
-        self.height: Decimal = set2Decimal(WHD[1], self.number_of_decimals)
-        self.depth: Decimal = set2Decimal(WHD[2], self.number_of_decimals)
-        self.max_weight: Decimal = set2Decimal(max_weight, self.number_of_decimals)
+        self.width: float = WHD[0]
+        self.height: float = WHD[1]
+        self.depth: float = WHD[2]
+        self.max_weight: float = max_weight
         self.corner_size: float = corner
         self.items: List[Item] = []  # Items in the bin.
-        self.fit_items: NDArray[np.float_] = np.array([[0, float(WHD[0]), 0, float(WHD[1]), 0, 0]])  # Represent the back-left-down and front-right-up point of the corner item. Each row represents one item.
+        self.fit_items: NDArray[np.float_] = np.array([[0, WHD[0], 0, WHD[1], 0, 0]])  # Represent the back-left-down and front-right-up point of the corner item. Each row represents one item.
         self.unfitted_items: List[Item] = []  # Items can not put into the bin.
         self.unconsidered_items: List[Item] = []  # Items would not consider to put into the bin because it doesn't int the binding.
         self.fix_point: bool = False
@@ -121,11 +118,11 @@ class Bin:
     def string(self) -> str:
         return f"{self.partno}({self.width}x{self.height}x{self.depth}), weight={self.max_weight}, volume={self.getVolume()}"
 
-    def getVolume(self) -> Decimal:
+    def getVolume(self) -> float:
         return self.width * self.height * self.depth
 
-    def getTotalWeight(self) -> Decimal:
-        total_weight = Decimal(0)
+    def getTotalWeight(self) -> float:
+        total_weight = 0.0
         for item in self.items:
             total_weight += item.weight
         return total_weight
@@ -147,13 +144,13 @@ class Bin:
         for rt_type in rotate:
             fit = True
             item.rotation_type = rt_type
-            [w, h, d] = [float(val) for val in item.getDimension()]
+            [w, h, d] = item.getDimension()
 
             # The item can not put into the bin in the pivot with the current rotation type. Therefore, rotate it.
             if (
-                float(self.width) < pivot[0] + w or
-                float(self.height) < pivot[1] + h or
-                float(self.depth) < pivot[2] + d
+                self.width < pivot[0] + w or
+                self.height < pivot[1] + h or
+                self.depth < pivot[2] + d
             ):  # fmt: skip
                 log.info(f"The current item [{item.partno}] can not put into the pivot {pivot}.")
                 continue
@@ -168,15 +165,15 @@ class Bin:
 
             if fit:
                 # Fix point float prob
-                [x, y, z] = [copy.deepcopy(float(pivot[0])), copy.deepcopy(float(pivot[1])), copy.deepcopy(float(pivot[2]))]
+                [x, y, z] = [copy.deepcopy(pivot[0]), copy.deepcopy(pivot[1]), copy.deepcopy(pivot[2])]
                 if self.fix_point:
                     while True:
                         # fix height
-                        y, is_y_change = self.checkHeight([x, x + float(w), y, y + float(h), z, z + float(d)])
+                        y, is_y_change = self.checkHeight([x, x + w, y, y + h, z, z + d])
                         # fix width
-                        x, is_x_change = self.checkWidth([x, x + float(w), y, y + float(h), z, z + float(d)])
+                        x, is_x_change = self.checkWidth([x, x + w, y, y + h, z, z + d])
                         # fix depth
-                        z, is_z_change = self.checkDepth([x, x + float(w), y, y + float(h), z, z + float(d)])
+                        z, is_z_change = self.checkDepth([x, x + w, y, y + h, z, z + d])
                         if not (is_x_change | is_y_change | is_z_change):
                             break
 
@@ -203,9 +200,9 @@ class Bin:
                         if support_area_upper / item_area_lower < self.support_surface_ratio:
                             four_vertices = [
                                 [x, y],
-                                [x + float(w), y],
-                                [x, y + float(h)],
-                                [x + float(w), y + float(h)],
+                                [x + w, y],
+                                [x, y + h],
+                                [x + w, y + h],
                             ]
                             #  If any vertices is not supported, fit = False.
                             c = [False, False, False, False]
@@ -224,7 +221,7 @@ class Bin:
                             # For debug, actually will never happen if the program is correct.
                             log.error(f"Current item = [{item.partno}], position = {item.position} collides with the item [{current_item_in_bin.partno}], position = {current_item_in_bin.position}.")
                             raise Exception("Collision check failed.")
-                    self.fit_items = np.append(self.fit_items, np.array([[x, x + float(w), y, y + float(h), z, z + float(d)]]), axis=0)
+                    self.fit_items = np.append(self.fit_items, np.array([[x, x + w, y, y + h, z, z + d]]), axis=0)
                     self.items.append(copy.deepcopy(item))
                     return True
 
@@ -238,18 +235,18 @@ class Bin:
         Fix item position z.
         :param unfix_point: The back-left-down and front-right-up point coordinate of the item. [x_min, x_max, y_min, y_max, z_min, z_max].
         """
-        z_: List[List[float]] = [[0, 0], [float(self.depth), float(self.depth)]]
+        z_: List[List[float]] = [[0, 0], [self.depth, self.depth]]
         for fix_item_corner in self.fit_items:
             rect1 = Rectangle(left_back_x=unfix_point[0], left_back_y=unfix_point[2], right_front_x=unfix_point[1], right_front_y=unfix_point[3])
             rect2 = Rectangle(left_back_x=fix_item_corner[0], left_back_y=fix_item_corner[2], right_front_x=fix_item_corner[1], right_front_y=fix_item_corner[3])
             if checkIntersect(rect1, rect2):
-                z_.append([float(fix_item_corner[4]), float(fix_item_corner[5])])
+                z_.append([fix_item_corner[4], fix_item_corner[5]])
         top_depth = unfix_point[5] - unfix_point[4]
         # find diff set on z_.
         z_ = combineLineSegment(z_)
         for index in range(len(z_) - 1):
             if z_[index + 1][0] - z_[index][1] >= top_depth:
-                return float(z_[index][1]), np.abs(float(z_[index][1]) - unfix_point[4]) > DELTA
+                return z_[index][1], np.abs(z_[index][1] - unfix_point[4]) > DELTA
         return unfix_point[4], False
 
     def checkWidth(self, unfix_point: List[float]) -> Tuple[float, bool]:
@@ -257,19 +254,19 @@ class Bin:
         Fix item position x.
         :param unfix_point: The back-left-down and front-right-up point coordinate of the item. [x_min, x_max, y_min, y_max, z_min, z_max].
         """
-        x_: List[List[float]] = [[0, 0], [float(self.width), float(self.width)]]
+        x_: List[List[float]] = [[0, 0], [self.width, self.width]]
         for fix_item_corner in self.fit_items:
             rect1 = Rectangle(left_back_x=unfix_point[2], left_back_y=unfix_point[4], right_front_x=unfix_point[3], right_front_y=unfix_point[5])
             rect2 = Rectangle(left_back_x=fix_item_corner[2], left_back_y=fix_item_corner[4], right_front_x=fix_item_corner[3], right_front_y=fix_item_corner[5])
             if checkIntersect(rect1, rect2):
-                x_.append([float(fix_item_corner[0]), float(fix_item_corner[1])])
+                x_.append([fix_item_corner[0], fix_item_corner[1]])
         top_width = unfix_point[1] - unfix_point[0]
         # find diff set on x_bottom and x_top.
         # x_ = sorted(x_, key=lambda x_: x_[1])
         x_ = combineLineSegment(x_)
         for index in range(len(x_) - 1):
             if x_[index + 1][0] - x_[index][1] >= top_width:
-                return float(x_[index][1]), np.abs(float(x_[index][1]) - unfix_point[0]) > DELTA
+                return x_[index][1], np.abs(x_[index][1] - unfix_point[0]) > DELTA
         return unfix_point[0], False
 
     def checkHeight(self, unfix_point: List[float]) -> Tuple[float, bool]:
@@ -277,18 +274,18 @@ class Bin:
         Fix item position y.
         :param unfix_point: The back-left-down and front-right-up point coordinate of the item. [x_min, x_max, y_min, y_max, z_min, z_max].
         """
-        y_: List[List[float]] = [[0, 0], [float(self.height), float(self.height)]]
+        y_: List[List[float]] = [[0, 0], [self.height, self.height]]
         for fix_item_corner in self.fit_items:
             rect1 = Rectangle(left_back_x=unfix_point[0], left_back_y=unfix_point[4], right_front_x=unfix_point[1], right_front_y=unfix_point[5])
             rect2 = Rectangle(left_back_x=fix_item_corner[0], left_back_y=fix_item_corner[4], right_front_x=fix_item_corner[1], right_front_y=fix_item_corner[5])
             if checkIntersect(rect1, rect2):
-                y_.append([float(fix_item_corner[2]), float(fix_item_corner[3])])
+                y_.append([fix_item_corner[2], fix_item_corner[3]])
         item_height = unfix_point[3] - unfix_point[2]
         # find diff set on y_bottom and y_top.
         y_ = combineLineSegment(y_)
         for index in range(len(y_) - 1):
             if y_[index + 1][0] - y_[index][1] >= item_height:
-                return float(y_[index][1]), np.abs(float(y_[index][1]) - unfix_point[2]) > DELTA
+                return y_[index][1], np.abs(y_[index][1] - unfix_point[2]) > DELTA
 
         return unfix_point[2], False
 
@@ -297,9 +294,9 @@ class Bin:
         Generate 8 corners as the items and put them into the bin.
         """
         if self.corner_size != 0:
-            x = float(self.width) - self.corner_size
-            y = float(self.height) - self.corner_size
-            z = float(self.depth) - self.corner_size
+            x = self.width - self.corner_size
+            y = self.height - self.corner_size
+            z = self.depth - self.corner_size
             pos: List[List[float]] = [  # Position of 8 corner items in the bin.
                 [0, 0, 0],
                 [0, 0, z],
@@ -328,12 +325,12 @@ class Bin:
 
                 # Represent the back-left-down and front-right-up point of the corner item. [x_min, x_max, y_min, y_max, z_min, z_max]
                 corner = [
-                    float(corner_item.position[0]),
-                    float(corner_item.position[0]) + float(self.corner_size),
-                    float(corner_item.position[1]),
-                    float(corner_item.position[1]) + float(self.corner_size),
-                    float(corner_item.position[2]),
-                    float(corner_item.position[2]) + float(self.corner_size),
+                    corner_item.position[0],
+                    corner_item.position[0] + self.corner_size,
+                    corner_item.position[1],
+                    corner_item.position[1] + self.corner_size,
+                    corner_item.position[2],
+                    corner_item.position[2] + self.corner_size,
                 ]
 
                 self.fit_items = np.append(self.fit_items, np.array([corner]), axis=0)

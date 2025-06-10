@@ -1,8 +1,6 @@
-from decimal import Decimal
 from typing import List, Tuple
 
-from .auxiliary_methods import set2Decimal
-from .constants import DEFAULT_NUMBER_OF_DECIMALS, START_POSITION, RotationType
+from .constants import START_POSITION, RotationType
 
 
 class Item:
@@ -18,14 +16,13 @@ class Item:
         updown: bool,
         color: str,
     ) -> None:
-        self.number_of_decimals: int = DEFAULT_NUMBER_OF_DECIMALS
         self.partno: str = partno
         self.name: str = name
         self.typeof: str = typeof
-        self.width: Decimal = set2Decimal(WHD[0], self.number_of_decimals)
-        self.height: Decimal = set2Decimal(WHD[1], self.number_of_decimals)
-        self.depth: Decimal = set2Decimal(WHD[2], self.number_of_decimals)
-        self.weight: Decimal = set2Decimal(weight, self.number_of_decimals)
+        self.width: float = WHD[0]
+        self.height: float = WHD[1]
+        self.depth: float = WHD[2]
+        self.weight: float = weight
         self.level: int = level  # Packing Priority level ,choose 1-3: The lower the number, the higher the priority.
         self.loadbear: int = loadbear  # loadbear: The higher the number, the higher the priority.
         self.updown: bool = updown if typeof == "cube" else False  # Upside down? True or False: True means the item can be placed upside down.
@@ -37,9 +34,9 @@ class Item:
         return f"{self.partno}({self.width}x{self.height}x{self.depth}), weight={self.weight}, pos={self.position}, rotType={self.rotation_type}, volume={self.getVolume()}"
 
     def getVolume(self) -> float:
-        return float(self.width * self.height * self.depth)
+        return self.width * self.height * self.depth
 
-    def getDimension(self) -> List[Decimal]:
+    def getDimension(self) -> List[float]:
         """
         Get the dimension of the item according to the rotation type.
         """

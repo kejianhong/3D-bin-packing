@@ -57,7 +57,7 @@ class Packer:
         for axis in Axis_All:
             items_in_bin = reversed(bin.items)  # TODO: first check the latest item putting into the bin.
             for ib in items_in_bin:
-                w, h, d = [float(val) for val in ib.getDimension()]
+                w, h, d = ib.getDimension()
                 if axis == Axis.WIDTH:
                     pivot = [ib.position[0] + w, ib.position[1], ib.position[2]]
                 elif axis == Axis.HEIGHT:
@@ -146,9 +146,9 @@ class Packer:
         for item in bin.items:
             x_st = int(item.position[0])
             y_st = int(item.position[1])
-            width = float(item.width)
-            height = float(item.height)
-            depth = float(item.depth)
+            width = item.width
+            height = item.height
+            depth = item.depth
             if item.rotation_type == RotationType.RT_WHD:
                 x_ed = int(item.position[0] + width)
                 y_ed = int(item.position[1] + height)

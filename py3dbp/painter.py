@@ -116,7 +116,7 @@ class Painter:
         axGlob = plt.axes(projection="3d")
 
         # Plot bin.
-        self._plotCube(axGlob, 0, 0, 0, float(self.width), float(self.height), float(self.depth), color="black", mode=1, linewidth=2)
+        self._plotCube(axGlob, 0, 0, 0, self.width, self.height, self.depth, color="black", mode=1, linewidth=2)
 
         # Fit rotation type.
         counter = 0
@@ -128,10 +128,10 @@ class Painter:
 
             if item.typeof == "cube":
                 # Plot item of cube.
-                self._plotCube(axGlob, float(x), float(y), float(z), float(w), float(h), float(d), color=color, mode=2, text=text, fontsize=fontsize, alpha=alpha)
+                self._plotCube(axGlob, x, y, z, w, h, d, color=color, mode=2, text=text, fontsize=fontsize, alpha=alpha)
             elif item.typeof == "cylinder":
                 # Plot item of cylinder.
-                self._plotCylinder(axGlob, float(x), float(y), float(z), float(w), float(h), float(d), color=color, text=text, fontsize=fontsize, alpha=alpha)
+                self._plotCylinder(axGlob, x, y, z, w, h, d, color=color, text=text, fontsize=fontsize, alpha=alpha)
 
             counter = counter + 1
 

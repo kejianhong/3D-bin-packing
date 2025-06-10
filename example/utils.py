@@ -12,16 +12,16 @@ def PrintPackingResult(packer: Packer) -> None:
 
         for item in bin.items:
             fit_items_string = f"{fit_items_string}{item.string()}\n"
-            volume_t += float(item.width) * float(item.height) * float(item.depth)
+            volume_t += item.getVolume()
         log.debug(f"{fit_items_string}")
 
         unfit_items_string = "UNFITTED ITEMS:\n"
         for item in bin.unfitted_items:
             unfit_items_string = f"{unfit_items_string}{item.string()}\n"
-            volume_f += float(item.width) * float(item.height) * float(item.depth)
+            volume_f += item.getVolume()
         log.debug(f"{unfit_items_string}")
-        log.info(f"space utilization: {round(volume_t / float(volume) * 100, 2)}")
-        log.info(f"residual volume: {float(volume) - volume_t}")
+        log.info(f"space utilization: {round(volume_t / volume * 100, 2)}")
+        log.info(f"residual volume: {volume - volume_t}")
         log.info(f"unpack item volume: {volume_f}")
         log.info(f"gravity distribution: {bin.gravity}")
 

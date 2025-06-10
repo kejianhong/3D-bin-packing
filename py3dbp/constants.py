@@ -32,7 +32,6 @@ class BinType(Enum):
     openSide = "openSide"
 
 
-DEFAULT_NUMBER_OF_DECIMALS = 0
 START_POSITION = [0.0, 0.0, 0.0]
 
 DELTA = 1e-3
