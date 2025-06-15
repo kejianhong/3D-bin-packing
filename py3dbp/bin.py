@@ -152,7 +152,7 @@ class Bin:
                 self.height < pivot[1] + h or
                 self.depth < pivot[2] + d
             ):  # fmt: skip
-                log.info(f"The current item [{item.partno}] can not put into the pivot {pivot}.")
+                log.info(f"The current item [{item.partno}] can not put into the pivot {pivot}, due to outside the bin.")
                 continue
 
             # Check whether the current item will intersect with the items which have been put into the bin.
@@ -175,6 +175,7 @@ class Bin:
                         # fix depth
                         z, is_z_change = self.checkDepth([x, x + w, y, y + h, z, z + d])
                         if not (is_x_change | is_y_change | is_z_change):
+                            log.warning(f"Fix item position from {pivot} to [{x},{y},{z}].")
                             break
 
                     # check stability on item
@@ -197,6 +198,7 @@ class Bin:
                                 support_area_upper += area
 
                         # If not , get four vertices of the bottom of the item.
+                        log.debug(f"Item [{item.partno}], dimension={item.getDimension()}, supported area = [{support_area_upper}], minimal supported rea = [{item_area_lower * self.support_surface_ratio}].")
                         if support_area_upper / item_area_lower < self.support_surface_ratio:
                             four_vertices = [
                                 [x, y],
@@ -211,6 +213,7 @@ class Bin:
                                     for jdx, j in enumerate(four_vertices):
                                         if (item_corner[0] <= j[0] <= item_corner[1]) and (item_corner[2] <= j[1] <= item_corner[3]):
                                             c[jdx] = True
+                            log.debug(f"Item [{item.partno}] has [{sum(c)}] supported corners.")
                             if False in c:
                                 continue
 
@@ -246,6 +249,7 @@ class Bin:
         z_ = combineLineSegment(z_)
         for index in range(len(z_) - 1):
             if z_[index + 1][0] - z_[index][1] >= top_depth:
+                log.info(f"Fix z(depth) from [{unfix_point[4]}] to [{z_[index][1]}].")
                 return z_[index][1], np.abs(z_[index][1] - unfix_point[4]) > DELTA
         return unfix_point[4], False
 
@@ -266,6 +270,7 @@ class Bin:
         x_ = combineLineSegment(x_)
         for index in range(len(x_) - 1):
             if x_[index + 1][0] - x_[index][1] >= top_width:
+                log.info(f"Fix x(width) from [{unfix_point[0]}] to [{x_[index][1]}].")
                 return x_[index][1], np.abs(x_[index][1] - unfix_point[0]) > DELTA
         return unfix_point[0], False
 
@@ -285,6 +290,7 @@ class Bin:
         y_ = combineLineSegment(y_)
         for index in range(len(y_) - 1):
             if y_[index + 1][0] - y_[index][1] >= item_height:
+                log.info(f"Fix y(height) from [{unfix_point[2]}] to [{y_[index][1]}].")
                 return y_[index][1], np.abs(y_[index][1] - unfix_point[2]) > DELTA
 
         return unfix_point[2], False

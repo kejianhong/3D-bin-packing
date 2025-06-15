@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from .constants import START_POSITION, RotationType
+from .constants import RT_ALL, START_POSITION, RotationType
 
 
 class Item:
@@ -53,6 +53,6 @@ class Item:
         elif self.rotation_type == RotationType.RT_WDH:
             dimension = [self.width, self.depth, self.height]
         else:
-            raise ValueError(f"Current rotation type = {self.rotation_type}, not in {RotationType.RT_ALL}")
+            raise ValueError(f"Current rotation type = {self.rotation_type}, not in {RT_ALL}")
 
         return dimension
